@@ -4,7 +4,7 @@ using websitepkhoaloi.Models.Enitity;
 
 namespace websitepkhoaloi.Services.Interface
 {
-    public interface IUser : IGenericRepository<ApplicationUser>
+    public interface IUser : IGenericRepository<CreateUser>
     {
         public Task<status> CreateUser(CreateUser user );
     }

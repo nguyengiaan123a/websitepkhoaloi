@@ -1,5 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using websitepkhoaloi.Data;
+using websitepkhoaloi.Helpper;
+using websitepkhoaloi.Models.Enitity;
+using websitepkhoaloi.Services.Interface;
+using websitepkhoaloi.Services.Responsive;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +20,12 @@ builder.Services.AddDbContext<MyDbcontext>(options =>
                 maxRetryDelay: TimeSpan.FromSeconds(10), // Thời gian chờ tối đa giữa các lần thử lại
                 errorNumbersToAdd: null); // Có thể chỉ định mã lỗi cụ thể để thử lại
         }));
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<MyDbcontext>()
+    .AddDefaultTokenProviders();
+builder.Services.AddScoped<IUser,UserResponsive>();
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

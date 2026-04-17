@@ -15,5 +15,9 @@ namespace websitepkhoaloi.Models.DTO.User
         [RegularExpression(@"^(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{6,}$", ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự, bao gồm ít nhất 1 chữ in hoa, 1 số và 1 ký tự đặc biệt")]
         public string Password { get; set; }
 
+        public DateTime?DateCreated { get; set; }
+
+
+
     }
 }

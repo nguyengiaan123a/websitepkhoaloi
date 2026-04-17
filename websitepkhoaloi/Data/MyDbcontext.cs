@@ -9,5 +9,8 @@ namespace websitepkhoaloi.Data
         public MyDbcontext(DbContextOptions<MyDbcontext> options) : base(options)
         {
         }
+        #region
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+        #endregion
     }
 }
