@@ -24,13 +24,6 @@
                     </button>
                 </div>
             </div>
-            <div class="col-md-6 text-end">
-                <select id="statusFilter" class="form-select w-auto d-inline-block">
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="1">Hoạt động</option>
-                    <option value="0">Khoá</option>
-                </select>
-            </div>
         </div>
 
         <div class="table-responsive">
@@ -40,7 +33,7 @@
                         <th>STT</th>
                         <th>Họ và tên</th>
                         <th>Tên đăng nhập</th>
-                        <th>Trạng thái</th>
+            
                         <th class="text-center">Thao tác</th>
                     </tr>
                 </thead>
@@ -65,18 +58,19 @@
     </div>
 </div>
 
-<!-- Add User Modal -->
+<!-- Add/Edit User Modal -->
 <div class="modal fade" id="modal-add" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="addUserModalLabel">
-                    <i class="fas fa-user-plus me-2"></i>Thêm người dùng mới
+                    <i class="fas fa-user-plus me-2"></i><span id="modalTitle">Thêm người dùng mới</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="userForm">
+                    <input type="hidden" id="userId" name="userId">
                     <div class="mb-3">
                         <label for="fullName" class="form-label required">Họ và tên</label>
                         <input type="text" class="form-control" id="fullName" name="fullName" required>
@@ -96,6 +90,7 @@
                             </button>
                         </div>
                         <small class="text-muted">Mật khẩu phải có ít nhất 6 ký tự, bao gồm 1 chữ in hoa, 1 số và 1 ký tự đặc biệt</small>
+                        <small id="passwordNote" class="d-block text-info mt-2" style="display: none;">Để trống nếu không muốn thay đổi mật khẩu</small>
                         <div class="invalid-feedback">Mật khẩu không hợp lệ</div>
                     </div>
                 </form>
@@ -141,16 +136,28 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/core/apiClient.js"></script>
+    
     <script>
+        // Khởi tạo API clients
+        const userApi = new ApiClient('/api/dang-ky-tai-khoan', {
+            modalSelector: '#modal-add',
+            formSelector: '#userForm'
+        });
+
+        const listUserApi = new ApiClient('/api/lay-danh-sach-nguoi-dung');
+
+        var currentPage = 1;
+        var pageSize = 20;
+        var editingUserId = null;
+
         $(document).ready(function () {
-            let currentPage = 1;
-            let pageSize = 10;
-            let searchKeyword = '';
-            let statusFilter = '';
+            let searchKeyword = $('#searchInput').val(); 
+            loadUsers(searchKeyword, currentPage, pageSize);
 
-
-       
+            // Reset form khi mở modal thêm mới
+          // Thay đổi từ 'show.bs.modal' thành 'shown.bs.modal'
+   
             // Toggle password visibility
             $('#togglePassword').click(function () {
                 const passwordInput = $('#password');
@@ -164,219 +171,232 @@
                 }
             });
 
-            // Save new user
+            // Save new user or update existing
             $('#saveUser').click(function() {
-                let formData = new FormData($('#userForm')[0]);
-                console.log(formData)
-                $.ajax({
-                    url: '/api/dang-ky-tai-khoan',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                           
-                            $('#modal-add').modal('hide');
-                            $('#userForm')[0].reset();
-                            swal.fire("Thành công", response.message, "success");
-                        } else {
-                            swal.fire("Thất bại", response.message, "error");
-                        }
-                    }
-                });
-            });
-
-            // Load users with pagination
-            function loadUsers(page = 1) {
-                $.ajax({
-                    url: '/api-get-users',
-                    type: 'GET',
-                    data: {
-                        page: page,
-                        pageSize: pageSize,
-                        search: searchKeyword,
-                        status: statusFilter
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            renderUserTable(response.data);
-                            renderPagination(response.totalPages, response.currentPage);
-                            $('#paginationInfo').html(`Hiển thị ${response.data.length} trên tổng số ${response.totalRecords} người dùng`);
-                        }
-                    },
-                    error: function (xhr) {
-                        console.error('Error loading users:', xhr);
-                    }
-                });
-            }
-
-            // Render user table
-            function renderUserTable(users) {
-                const tbody = $('#userTableBody');
-                tbody.empty();
-
-                if (users.length === 0) {
-                    tbody.html('一分<td colspan="5" class="text-center">Không có dữ liệu</td></tr>');
-                    return;
-                }
-
-                users.forEach((user, index) => {
-                    const statusBadge = user.Status === 1
-                        ? '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Hoạt động</span>'
-                        : '<span class="badge bg-danger"><i class="fas fa-lock me-1"></i>Khoá</span>';
-
-                    const row = `
-                        <tr>
-                            <td>${(currentPage - 1) * pageSize + index + 1}</td>
-                            <td><strong>${escapeHtml(user.fullName)}</strong></td>
-                            <td><code>${escapeHtml(user.username)}</code></td>
-                            <td>${statusBadge}</td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-warning me-1" onclick="editUser('${user.id}')" title="Sửa">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}', '${escapeHtml(user.fullName)}')" title="Xoá">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.append(row);
-                });
-            }
-
-            // Render pagination
-            function renderPagination(totalPages, currentPage) {
-                const pagination = $('#pagination');
-                pagination.empty();
-
-                if (totalPages <= 1) return;
-
-                // Previous button
-                pagination.append(`
-                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    </li>
-                `);
-
-                // Page numbers
-                for (let i = 1; i <= totalPages; i++) {
-                    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-                        pagination.append(`
-                            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                                <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
-                            </li>
-                        `);
-                    } else if (i === currentPage - 3 || i === currentPage + 3) {
-                        pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
-                    }
-                }
-
-                // Next button
-                pagination.append(`
-                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                `);
-            }
-
-            window.changePage = function (page) {
-                if (page >= 1 && page <= totalPages) {
-                    currentPage = page;
-                    loadUsers(page);
-                }
-            };
-
-            window.editUser = function (userId) {
-                $.ajax({
-                    url: `/api-get-user/${userId}`,
-                    type: 'GET',
-                    success: function (response) {
-                        if (response.success) {
-                            $('#editUserId').val(response.data.id);
-                            $('#editFullName').val(response.data.fullName);
-                            $('#editUsername').val(response.data.username);
-                            $('#editStatus').val(response.data.status);
-                            $('#editUserModal').modal('show');
-                        }
-                    },
-                    error: function () {
-                        Swal.fire('Lỗi!', 'Không thể lấy thông tin người dùng', 'error');
-                    }
-                });
-            };
-
-            // Update user
-            $('#updateUserBtn').click(function () {
-                const userId = $('#editUserId').val();
-                const formData = {
-                    Id: userId,
-                    FullName: $('#editFullName').val(),
-                    Username: $('#editUsername').val(),
-                    Status: parseInt($('#editStatus').val())
-                };
-
-                if (!formData.FullName || !formData.Username) {
-                    Swal.fire('Lỗi!', 'Vui lòng điền đầy đủ thông tin', 'error');
-                    return;
-                }
-
-                $.ajax({
-                    url: '/api-update-user',
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify(formData),
-                    success: function (response) {
-                        if (response.success) {
-                            Swal.fire('Thành công!', response.message, 'success');
-                            $('#editUserModal').modal('hide');
-                            loadUsers(currentPage);
-                        } else {
-                            Swal.fire('Lỗi!', response.message, 'error');
-                        }
-                    },
-                    error: function () {
-                        Swal.fire('Lỗi!', 'Có lỗi xảy ra khi cập nhật', 'error');
-                    }
-                });
-            });
-
-            window.deleteUser = function (userId, userName) {
-                $('#deleteUserName').text(userName);
-                $('#deleteUserModal').modal('show');
-
-                $('#confirmDeleteBtn').off('click').on('click', function () {
-                    $.ajax({
-                        url: `/api-delete-user/${userId}`,
-                        type: 'DELETE',
-                        success: function (response) {
-                            if (response.success) {
-                                Swal.fire('Thành công!', response.message, 'success');
-                                $('#deleteUserModal').modal('hide');
-                                loadUsers(currentPage);
-                            } else {
-                                Swal.fire('Lỗi!', response.message, 'error');
-                            }
-                        },
-                        error: function () {
-                            Swal.fire('Lỗi!', 'Có lỗi xảy ra khi xoá', 'error');
+              
+                const formData = new FormData($('#userForm')[0]);
+                
+                if (editingUserId) {
+                    // Update existing user
+                    userApi.put(formData, {
+                        hideModal: true,
+                        resetForm: true,
+                        callback: function(response) {
+                            editingUserId = null;
+                            currentPage = 1;
+                            loadUsers($('#searchInput').val(), currentPage, pageSize);
                         }
                     });
-                });
-            };
+                } else {
+                    // Create new user
+                    userApi.post(formData, {
+                        hideModal: true,
+                        resetForm: true,
+                        callback: function(response) {
+                            editingUserId = null;
+                            currentPage = 1;
+                            loadUsers($('#searchInput').val(), currentPage, pageSize);
+                        }
+                    });
+                }
+            });
+            $('#modal-add').on('hidden.bs.modal', function () {
+                resetForm();
+                  $('#updateUser').attr('id', 'saveUser');
+            });
 
-            function escapeHtml(text) {
-                if (!text) return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
+            // Search functionality
+            $('#searchBtn').click(function() {
+                currentPage = 1;
+                let searchKeyword = $('#searchInput').val();
+                loadUsers(searchKeyword, currentPage, pageSize);
+            });
+
+            // Search on Enter key
+            $('#searchInput').keypress(function(e) {
+                if (e.which === 13) {
+                    $('#searchBtn').click();
+                    return false;
+                }
+            });
+
+            // Status filter
+            $('#statusFilter').change(function() {
+                currentPage = 1;
+                let searchKeyword = $('#searchInput').val();
+                loadUsers(searchKeyword, currentPage, pageSize);
+            });
         });
+
+        /**
+         * Tải danh sách người dùng
+         */
+        function loadUsers(searchKeyword, page, pageSize) {
+            const formData = new FormData();
+            formData.append('search', searchKeyword);
+            formData.append('page', page);
+            formData.append('pagesize', pageSize);
+
+            listUserApi.post(formData, {
+                hideModal: false,
+                resetForm: false,
+                callback: function(response) {
+                    if (response.success && response.data) {
+                        renderUserTable(response.data);
+                        renderPagination(response.totalPages, page);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Render bảng người dùng
+         */
+        function renderUserTable(users) {
+            let html = '';
+            users.forEach((user, index) => {
+                const statusBadge = user.isActive 
+                    ? '<span class="badge bg-success">Hoạt động</span>' 
+                    : '<span class="badge bg-danger">Khoá</span>';
+                
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${user.fullName}</td>
+                        <td>${user.username}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info edit-btn" onclick="editUser('${user.id}')">
+                                <i class="fas fa-edit"></i> Sửa
+                            </button>
+                  
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}', '${user.fullName}')">
+                                <i class="fas fa-trash"></i> Xoá
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            $('#userTableBody').html(html);
+        }
+
+        /**
+         * Render pagination
+         */
+        function renderPagination(totalPages, currentPageNum) {
+            let paginationHtml = '';
+            
+            // Previous button
+            if (currentPageNum > 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${currentPageNum - 1})">Trước</a></li>`;
+            }
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPageNum) {
+                    paginationHtml += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+                } else {
+                    paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${i})">${i}</a></li>`;
+                }
+            }
+
+            // Next button
+            if (currentPageNum < totalPages) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${currentPageNum + 1})">Sau</a></li>`;
+            }
+
+            $('#pagination').html(paginationHtml);
+            $('#paginationInfo').text(`Trang ${currentPageNum} / ${totalPages}`);
+        }
+
+        /**
+         * Chuyển trang
+         */
+        function changePage(pageNum) {
+            currentPage = pageNum;
+            let searchKeyword = $('#searchInput').val();
+            loadUsers(searchKeyword, currentPage, pageSize);
+            return false;
+        }
+
+        /**
+         * Chỉnh sửa người dùng
+         */
+        function editUser(userId) {
+            editingUserId = userId;
+           
+            // Tạo API client để lấy thông tin người dùng
+            const getApi = new ApiClient(`/api/chi-tiet-nguoi-dung/${userId}`);
+            getApi.get({}, {
+                callback: function(response) {
+                    if (response.success && response.data) {
+                        const user = response.data;
+                        console.log('User data:', user);    
+                        $('#userId').val(user.id);
+                        $('#fullName').val(user.fullName);
+                        $('#username').val(user.username);
+                        $('#password').val('');
+                        $('#password').removeAttr('required');
+                        $('#passwordNote').show();
+                        $('#addUserModalLabel').text('Chỉnh sửa người dùng');
+                        $('#modalTitle').text('Chỉnh sửa người dùng');
+                        $('#modal-add').modal('show');
+                        $('#saveUser').attr('id', 'updateUser');
+                      
+                    
+                    }
+                }
+            });
+        }
+
+        /**
+         * Xóa người dùng
+         */
+        function deleteUser(userId, userName) {
+            $('#deleteUserName').text(userName);
+            $('#deleteUserModal').modal('show');
+            
+            $('#confirmDeleteBtn').off('click').click(function() {
+                const deleteApi = new ApiClient(`/api/xoa-nguoi-dung/${userId}`);
+                deleteApi.delete({}, {
+                    hideModal: true,
+                    callback: function() {
+                        currentPage = 1;
+                        loadUsers($('#searchInput').val(), currentPage, pageSize);
+                    }
+                });
+            });
+        }
+
+    
+        /**
+         * Reset form thêm mới
+         */
+        function resetForm() {
+            editingUserId = null;
+            $('#userId').val('');
+            $('#userForm')[0].reset();
+            $('#password').attr('required', 'required');
+            $('#passwordNote').hide();
+            $('#addUserModalLabel').text('Thêm người dùng mới');
+            $('#modalTitle').text('Thêm người dùng mới');
+        }
+           /**
+         * cập nhật người dùng
+         */
+         function updateUser(userId) {
+            const formData = new FormData($('#userForm')[0]);
+            const updateApi = new ApiClient(`/api/cap-nhat-nguoi-dung/${userId}`);
+            updateApi.put(formData, {
+                hideModal: true,
+                resetForm: true,
+                callback: function(response) {
+                    editingUserId = null;
+                    currentPage = 1;
+                    loadUsers($('#searchInput').val(), currentPage, pageSize);
+                }
+            });
+         }
+
     </script>
 }
 @section Styles {

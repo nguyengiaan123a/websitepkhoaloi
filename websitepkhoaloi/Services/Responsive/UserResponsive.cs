@@ -16,20 +16,17 @@ namespace websitepkhoaloi.Services.Responsive
         private readonly IMapper _Mapper;
         private readonly MyDbcontext _dbcontext;
 
-        public UserResponsive(UserManager<ApplicationUser> userManager,IMapper Mapper,MyDbcontext dbcontext)
+        public UserResponsive(UserManager<ApplicationUser> userManager, IMapper Mapper, MyDbcontext dbcontext)
         {
             _userManager = userManager;
             _Mapper = Mapper;
             _dbcontext = dbcontext;
-
-
         }
 
-        public Task<CreateUser> Add(CreateUser entity)
-        {
-            throw new NotImplementedException();
-        }
 
+        /// <summary>
+        /// Tạo người dùng mới
+        /// </summary>
         public async Task<status> CreateUser(CreateUser user)
         {
             status _status = new status();
@@ -51,7 +48,8 @@ namespace websitepkhoaloi.Services.Responsive
                 {
                     UserName = user.Username,
                     FullName = user.FullName,
-                    DateCreated= DateTime.Now
+                    DateCreated = DateTime.Now,
+                    
                 };
 
                 var result = await _userManager.CreateAsync(newUser, user.Password);
@@ -81,21 +79,75 @@ namespace websitepkhoaloi.Services.Responsive
             }
         }
 
-        public Task Delete(int id)
+
+        /// <summary>
+        /// Xóa người dùng theo ID
+        /// </summary>
+        public async Task<status> Delete(string id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    return new status
+                    {
+                        Status = 0,
+                        Message = "Không tìm thấy người dùng"
+                    };
+                }
+
+                var result = await _userManager.DeleteAsync(user);
+                if (result.Succeeded)
+                {
+                    return new status
+                    {
+                        Status = 1,
+                        Message = "Xóa người dùng thành công"
+                    };
+                }
+
+                return new status
+                {
+                    Status = 0,
+                    Message = string.Join("; ", result.Errors.Select(e => e.Description))
+                };
+            }
+            catch (Exception ex)
+            {
+                return new status
+                {
+                    Status = 0,
+                    Message = ex.Message
+                };
+            }
         }
 
-        public Task<bool> Exists(int id)
+
+        /// <summary>
+        /// Lấy thông tin chi tiết người dùng theo ID
+        /// </summary>
+        public async Task<CreateUser> Get(string id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    return null;
+                }
+
+                return _Mapper.Map<CreateUser>(user);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
-        public Task<CreateUser> Get(int id)
-        {
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// Lấy danh sách tất cả người dùng với phân trang và tìm kiếm
+        /// </summary>
         public async Task<(int totalpages, IReadOnlyList<CreateUser>)> GetAll(int page, int pagesize, string search)
         {
             try
@@ -111,14 +163,16 @@ namespace websitepkhoaloi.Services.Responsive
                 int totalPages = (int)Math.Ceiling(totalItems / (double)pagesize);
 
                 var users = await query
-                    .OrderBy(u => u.DateCreated)
+                    .OrderByDescending(u => u.DateCreated)
                     .Skip((page - 1) * pagesize)
-                    .Take(pagesize).Select(u => new ApplicationUser
+                    .Take(pagesize)
+                    .Select(u => new ApplicationUser
                     {
                         Id = u.Id,
                         UserName = u.UserName,
                         FullName = u.FullName,
-                        DateCreated = u.DateCreated
+                        DateCreated = u.DateCreated,
+                    
                     })
                     .ToListAsync();
 
@@ -129,13 +183,74 @@ namespace websitepkhoaloi.Services.Responsive
             catch (Exception ex)
             {
                 return (0, new List<CreateUser>());
-
             }
         }
 
-        public Task Update(CreateUser entity)
+
+        /// <summary>
+        /// Cập nhật thông tin người dùng
+        /// </summary>
+        public async Task<status> Update(string id, CreateUser updateUser)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    return new status
+                    {
+                        Status = 0,
+                        Message = "Không tìm thấy người dùng"
+                    };
+                }
+
+                user.FullName = updateUser.FullName;
+                user.UserName = updateUser.Username;
+
+                var result = await _userManager.UpdateAsync(user);
+
+                if (result.Succeeded)
+                {
+                    // Nếu có mật khẩu mới, cập nhật mật khẩu
+                    if (!string.IsNullOrEmpty(updateUser.Password))
+                    {
+                        var removeResult = await _userManager.RemovePasswordAsync(user);
+                        if (removeResult.Succeeded)
+                        {
+                            var addResult = await _userManager.AddPasswordAsync(user, updateUser.Password);
+                            if (!addResult.Succeeded)
+                            {
+                                return new status
+                                {
+                                    Status = 0,
+                                    Message = "Cập nhật mật khẩu thất bại"
+                                };
+                            }
+                        }
+                    }
+
+                    return new status
+                    {
+                        Status = 1,
+                        Message = "Cập nhật người dùng thành công"
+                    };
+                }
+
+                return new status
+                {
+                    Status = 0,
+                    Message = string.Join("; ", result.Errors.Select(e => e.Description))
+                };
+            }
+            catch (Exception ex)
+            {
+                return new status
+                {
+                    Status = 0,
+                    Message = ex.Message
+                };
+            }
         }
+
     }
 }
