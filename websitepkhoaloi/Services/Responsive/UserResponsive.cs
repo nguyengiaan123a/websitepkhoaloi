@@ -171,7 +171,9 @@ namespace websitepkhoaloi.Services.Responsive
                         Id = u.Id,
                         UserName = u.UserName,
                         FullName = u.FullName,
-                        DateCreated = u.DateCreated,
+                        PasswordHash=u.PasswordHash,
+  
+
                     
                     })
                     .ToListAsync();
@@ -190,67 +192,93 @@ namespace websitepkhoaloi.Services.Responsive
         /// <summary>
         /// Cập nhật thông tin người dùng
         /// </summary>
+        /// <param name="id">ID người dùng cần cập nhật</param>
+        /// 
         public async Task<status> Update(string id, CreateUser updateUser)
+{
+    try
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
         {
-            try
-            {
-                var user = await _userManager.FindByIdAsync(id);
-                if (user == null)
-                {
-                    return new status
-                    {
-                        Status = 0,
-                        Message = "Không tìm thấy người dùng"
-                    };
-                }
+            return new status { Status = 0, Message = "Không tìm thấy người dùng" };
+        }
 
-                user.FullName = updateUser.FullName;
-                user.UserName = updateUser.Username;
+        // ===== 1. Update thông tin cơ bản =====
+        bool needUpdateUser = false;
 
-                var result = await _userManager.UpdateAsync(user);
+        if (user.FullName != updateUser.FullName)
+        {
+            user.FullName = updateUser.FullName;
+            needUpdateUser = true;
+        }
 
-                if (result.Succeeded)
-                {
-                    // Nếu có mật khẩu mới, cập nhật mật khẩu
-                    if (!string.IsNullOrEmpty(updateUser.Password))
-                    {
-                        var removeResult = await _userManager.RemovePasswordAsync(user);
-                        if (removeResult.Succeeded)
-                        {
-                            var addResult = await _userManager.AddPasswordAsync(user, updateUser.Password);
-                            if (!addResult.Succeeded)
-                            {
-                                return new status
-                                {
-                                    Status = 0,
-                                    Message = "Cập nhật mật khẩu thất bại"
-                                };
-                            }
-                        }
-                    }
+        if (user.UserName != updateUser.Username)
+        {
+            user.UserName = updateUser.Username;
+            needUpdateUser = true;
+        }
 
-                    return new status
-                    {
-                        Status = 1,
-                        Message = "Cập nhật người dùng thành công"
-                    };
-                }
-
-                return new status
-                {
-                    Status = 0,
-                    Message = string.Join("; ", result.Errors.Select(e => e.Description))
-                };
-            }
-            catch (Exception ex)
+        if (needUpdateUser)
+        {
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
             {
                 return new status
                 {
                     Status = 0,
-                    Message = ex.Message
+                    Message = string.Join("; ", updateResult.Errors.Select(e => e.Description))
                 };
             }
         }
 
+        // ===== 2. Update password =====
+        if (!string.IsNullOrWhiteSpace(updateUser.Password))
+        {
+            var hasher = _userManager.PasswordHasher;
+
+            var verify = hasher.VerifyHashedPassword(
+                user,
+                user.PasswordHash,
+                updateUser.Password
+            );
+
+            // ✅ Nếu giống password cũ → bỏ qua (KHÔNG lỗi)
+            if (verify != PasswordVerificationResult.Success)
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                var resetResult = await _userManager.ResetPasswordAsync(
+                    user,
+                    token,
+                    updateUser.Password
+                );
+
+                if (!resetResult.Succeeded)
+                {
+                    return new status
+                    {
+                        Status = 0,
+                        Message = string.Join("; ", resetResult.Errors.Select(e => e.Description))
+                    };
+                }
+            }
+        }
+
+        return new status
+        {
+            Status = 1,
+            Message = "Cập nhật người dùng thành công"
+        };
     }
+    catch (Exception ex)
+    {
+        return new status
+        {
+            Status = 0,
+            Message = ex.Message
+        };
+    }
+}
+        }
 }

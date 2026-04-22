@@ -1,6 +1,5 @@
 /**
- * API Client Template - Dùng chung cho tất cả các file cshtml
- * Hỗ trợ GET, POST, PUT, DELETE request
+ * API Client Template - Dùng chung
  */
 class ApiClient {
     constructor(url, options = {}) {
@@ -11,62 +10,82 @@ class ApiClient {
         this.formSelector = options.formSelector || '#userForm';
     }
 
-    /**
-     * Hiển thị loading
-     */
+    // ===== LOADING =====
     showLoading() {
         if (this.loadingSelector) {
             $(this.loadingSelector).show();
         }
     }
 
-    /**
-     * Ẩn loading
-     */
     hideLoading() {
         if (this.loadingSelector) {
             $(this.loadingSelector).hide();
         }
     }
 
-    /**
-     * Xử lý response thành công
-     */
+    // ===== SUCCESS HANDLER =====
     handleSuccess(response, options = {}) {
         const {
             hideModal = true,
             resetForm = true,
+            showMessage = true,
+            successMessage = null,
+            errorMessage = null,
             callback = null
         } = options;
 
         if (response.success) {
+
             if (hideModal && this.modalSelector) {
                 $(this.modalSelector).modal('hide');
             }
+
             if (resetForm && this.formSelector) {
                 $(this.formSelector)[0].reset();
             }
-            swal.fire("Thành công", response.message || "Lưu dữ liệu thành công", "success");
+
+            if (showMessage) {
+                swal.fire(
+                    "Thành công",
+                    successMessage || response.message || "Lưu dữ liệu thành công",
+                    "success"
+                );
+            }
+
             if (callback) callback(response);
+
         } else {
-            swal.fire("Thất bại", response.message || "Có lỗi xảy ra", "error");
+            if (showMessage) {
+                swal.fire(
+                    "Thất bại",
+                    errorMessage || response.message || "Có lỗi xảy ra",
+                    "error"
+                );
+            }
         }
     }
 
-    /**
-     * Xử lý lỗi
-     */
-    handleError(error) {
+    // ===== ERROR HANDLER =====
+    handleError(error, options = {}) {
+        const {
+            showMessage = true,
+            errorMessage = null
+        } = options;
+
         console.error('API Error:', error);
-        swal.fire("Lỗi", error.statusText || "Có lỗi kết nối đến server", "error");
+
+        if (showMessage) {
+            swal.fire(
+                "Lỗi",
+                errorMessage || error.statusText || "Có lỗi kết nối đến server",
+                "error"
+            );
+        }
     }
 
-    /**
-     * POST Request - Lưu dữ liệu
-     */
+    // ===== POST =====
     post(formData, options = {}) {
         this.showLoading();
-        const self = this;
 
         $.ajax({
             url: this.url,
@@ -75,23 +94,21 @@ class ApiClient {
             processData: false,
             contentType: false,
             timeout: this.timeout,
-            success: function(response) {
-                self.hideLoading();
-                self.handleSuccess(response, options);
+            success: (response) => {
+                this.hideLoading();
+                this.handleSuccess(response, options);
             },
-            error: function(error) {
-                self.hideLoading();
-                self.handleError(error);
+            error: (error) => {
+                this.hideLoading();
+                this.handleError(error, options);
             }
         });
     }
 
-    /**
-     * GET Request - Lấy dữ liệu
-     */
+    // ===== GET =====
     get(params = {}, options = {}) {
         this.showLoading();
-        const self = this;
+
         const queryString = new URLSearchParams(params).toString();
         const url = queryString ? `${this.url}?${queryString}` : this.url;
 
@@ -100,25 +117,22 @@ class ApiClient {
             type: 'GET',
             dataType: 'json',
             timeout: this.timeout,
-            success: function(response) {
-                self.hideLoading();
+            success: (response) => {
+                this.hideLoading();
                 if (options.callback) {
                     options.callback(response);
                 }
             },
-            error: function(error) {
-                self.hideLoading();
-                self.handleError(error);
+            error: (error) => {
+                this.hideLoading();
+                this.handleError(error, options);
             }
         });
     }
 
-    /**
-     * PUT Request - Cập nhật dữ liệu
-     */
+    // ===== PUT =====
     put(formData, options = {}) {
         this.showLoading();
-        const self = this;
 
         $.ajax({
             url: this.url,
@@ -127,23 +141,21 @@ class ApiClient {
             processData: false,
             contentType: false,
             timeout: this.timeout,
-            success: function(response) {
-                self.hideLoading();
-                self.handleSuccess(response, options);
+            success: (response) => {
+                this.hideLoading();
+                this.handleSuccess(response, options);
             },
-            error: function(error) {
-                self.hideLoading();
-                self.handleError(error);
+            error: (error) => {
+                this.hideLoading();
+                this.handleError(error, options);
             }
         });
     }
 
-    /**
-     * DELETE Request - Xóa dữ liệu
-     */
+    // ===== DELETE =====
     delete(params = {}, options = {}) {
         this.showLoading();
-        const self = this;
+
         const queryString = new URLSearchParams(params).toString();
         const url = queryString ? `${this.url}?${queryString}` : this.url;
 
@@ -151,23 +163,20 @@ class ApiClient {
             url: url,
             type: 'DELETE',
             timeout: this.timeout,
-            success: function(response) {
-                self.hideLoading();
-                self.handleSuccess(response, options);
+            success: (response) => {
+                this.hideLoading();
+                this.handleSuccess(response, options);
             },
-            error: function(error) {
-                self.hideLoading();
-                self.handleError(error);
+            error: (error) => {
+                this.hideLoading();
+                this.handleError(error, options);
             }
         });
     }
 
-    /**
-     * PATCH Request - Cập nhật một phần dữ liệu
-     */
+    // ===== PATCH =====
     patch(data, options = {}) {
         this.showLoading();
-        const self = this;
 
         $.ajax({
             url: this.url,
@@ -176,17 +185,17 @@ class ApiClient {
             dataType: 'json',
             contentType: 'application/json',
             timeout: this.timeout,
-            success: function(response) {
-                self.hideLoading();
-                self.handleSuccess(response, options);
+            success: (response) => {
+                this.hideLoading();
+                this.handleSuccess(response, options);
             },
-            error: function(error) {
-                self.hideLoading();
-                self.handleError(error);
+            error: (error) => {
+                this.hideLoading();
+                this.handleError(error, options);
             }
         });
     }
 }
 
-// Backward compatibility - giữ tên cũ
+// Backward compatibility
 class apicall extends ApiClient {}

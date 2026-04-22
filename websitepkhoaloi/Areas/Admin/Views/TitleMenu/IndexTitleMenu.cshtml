@@ -1,13 +1,15 @@
-﻿
+@{
+    ViewData["Title"] = "Quản lý tiêu đề menu";
+}
 
 <!-- DataTales Example -->
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row justify-content-between align-items-center bg-gradient-primary">
         <h6 class="m-0 font-weight-bold text-white">
-            <i class="fas fa-users me-2"></i>Quản lý người dùng
+            <i class="fas fa-users me-2"></i>Quản lý menu
         </h6>
         <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modal-add">
-            <i class="fas fa-plus-circle me-1"></i>Thêm người dùng
+            <i class="fas fa-plus-circle me-1"></i>Thêm tiều đề menu
         </button>
     </div>
     <div class="card-body">
@@ -31,13 +33,13 @@
                 <thead class="table-light">
                     <tr>
                         <th>STT</th>
-                        <th>Họ và tên</th>
-                        <th>Tên đăng nhập</th>
+                        <th>Tiều đề</th>
+                        <th>Icon</th>
             
                         <th class="text-center">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody id="userTableBody">
+                <tbody id="titleMenuTableBody">
                     <!-- Data will be loaded here -->
                 </tbody>
             </table>
@@ -58,40 +60,32 @@
     </div>
 </div>
 
-<!-- Add/Edit User Modal -->
-<div class="modal fade" id="modal-add" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+<!-- Add/Edit TitleMenu Modal -->
+<div class="modal fade" id="modal-add" tabindex="-1" aria-labelledby="addTitleMenuModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="addUserModalLabel">
-                    <i class="fas fa-user-plus me-2"></i><span id="modalTitle">Thêm người dùng mới</span>
+                <h5 class="modal-title" id="addTitleMenuModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i><span id="modalTitle">Thêm Menu Chính Mới</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="userForm">
-                    <input type="hidden" id="userId" name="userId">
+                <form id="titleMenuForm">
+                    <input type="hidden" id="titleMenuId" name="titleMenuId">
                     <div class="mb-3">
-                        <label for="fullName" class="form-label required">Họ và tên</label>
-                        <input type="text" class="form-control" id="fullName" name="fullName" required>
-                        <div class="invalid-feedback">Vui lòng nhập họ tên</div>
+                        <label for="title" class="form-label required">Tiêu Đề</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                        <div class="invalid-feedback">Vui lòng nhập tiêu đề</div>
                     </div>
                     <div class="mb-3">
-                        <label for="username" class="form-label required">Tài khoản</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                        <div class="invalid-feedback">Vui lòng nhập tài khoản</div>
+                        <label for="icon" class="form-label">Icon</label>
+                        <input type="text" class="form-control" id="icon" name="icon" placeholder="VD: bi-home">
+                        <small class="text-muted">Bootstrap Icons: https://icons.getbootstrap.com/</small>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label required">Mật khẩu</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="password" name="password" required>
-                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <small class="text-muted">Mật khẩu phải có ít nhất 6 ký tự, bao gồm 1 chữ in hoa, 1 số và 1 ký tự đặc biệt</small>
-                        <small id="passwordNote" class="d-block text-info mt-2" style="display: none;">Để trống nếu không muốn thay đổi mật khẩu</small>
-                        <div class="invalid-feedback">Mật khẩu không hợp lệ</div>
+                        <label for="thumnail" class="form-label">Hình Ảnh</label>
+                        <input type="text" class="form-control" id="thumnail" name="thumnail" placeholder="URL hình ảnh">
                     </div>
                 </form>
             </div>

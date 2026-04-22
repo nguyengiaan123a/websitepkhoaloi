@@ -18,6 +18,10 @@ namespace websitepkhoaloi.Models.DTO.User
 
         public DateTime?DateCreated { get; set; }
 
+        public string ? PasswordHash { get; set; }
+
+
+
 
 
     }
