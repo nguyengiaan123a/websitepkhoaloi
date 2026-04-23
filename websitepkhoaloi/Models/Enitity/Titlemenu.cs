@@ -12,6 +12,8 @@ namespace websitepkhoaloi.Models.Enitity
             menus = new List<Menu>();
         }
        public string thumnail { get; set;}
+
+       public int order { get; set;}
        public List<Menu> menus { get; set;}
 
     }

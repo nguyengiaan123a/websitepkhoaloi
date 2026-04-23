@@ -52,8 +52,6 @@ class ApiClient {
                 );
             }
 
-            if (callback) callback(response);
-
         } else {
             if (showMessage) {
                 swal.fire(
@@ -63,6 +61,9 @@ class ApiClient {
                 );
             }
         }
+
+        // Gọi callback luôn, dù thành công hay thất bại
+        if (callback) callback(response);
     }
 
     // ===== ERROR HANDLER =====

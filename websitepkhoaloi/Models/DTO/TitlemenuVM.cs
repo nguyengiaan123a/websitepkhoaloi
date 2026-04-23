@@ -9,6 +9,7 @@ namespace websitepkhoaloi.Models.DTO.User
         [Required(ErrorMessage = "Tiêu đề không được để trống ")]
         public string title { get; set; } 
         public bool ? status   { get; set;}
-        public string ?Thumnail { get; set;}
+        public string ?thumnail { get; set;}
+         public int order { get; set;}
     }
 }

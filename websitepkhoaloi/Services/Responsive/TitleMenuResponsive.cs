@@ -26,7 +26,6 @@ namespace websitepkhoaloi.Services.Responsive
                 var titlemenu = _mapper.Map<Titlemenu>(entity);
                 _context.Titlemenus.Add(titlemenu);
                 await _context.SaveChangesAsync();
-
                 return new status { Status = 1, Message = "Thêm thành công" };
             }
             catch (Exception ex)
@@ -78,6 +77,8 @@ namespace websitepkhoaloi.Services.Responsive
                         Id = x.Id,
                         title = x.title,
                         thumnail = x.thumnail,
+                        status = x.status,
+                        order = x.order,
                         
                     })
                     .ToListAsync();
@@ -89,6 +90,20 @@ namespace websitepkhoaloi.Services.Responsive
             catch (Exception)
             {
                 return (0, new List<TitlemenuVM>());
+            }
+        }
+
+        public async Task<TitlemenuVM> GetById(int id)
+        {
+
+           try
+            {
+                 var titlemenu = await _context.Titlemenus.FindAsync(id);
+                return _mapper.Map<TitlemenuVM>(titlemenu);
+                
+            }catch (Exception)
+            {
+                return null;
             }
         }
 

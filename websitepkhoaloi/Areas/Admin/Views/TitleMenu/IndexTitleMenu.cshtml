@@ -1,15 +1,15 @@
 @{
-    ViewData["Title"] = "Quản lý tiêu đề menu";
+    ViewData["Title"] = "Quản lý danh mục menu";
 }
 
 <!-- DataTales Example -->
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row justify-content-between align-items-center bg-gradient-primary">
         <h6 class="m-0 font-weight-bold text-white">
-            <i class="fas fa-users me-2"></i>Quản lý menu
+            <i class="fas fa-users me-2"></i>Quản lý danh mục menu
         </h6>
         <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modal-add">
-            <i class="fas fa-plus-circle me-1"></i>Thêm tiều đề menu
+            <i class="fas fa-plus-circle me-1"></i>Thêm danh mục menu
         </button>
     </div>
     <div class="card-body">
@@ -35,7 +35,9 @@
                         <th>STT</th>
                         <th>Tiều đề</th>
                         <th>Icon</th>
-            
+                        <th>Trạng thái</th>
+                        <th>Thứ tự</th>
+
                         <th class="text-center">Thao tác</th>
                     </tr>
                 </thead>
@@ -66,13 +68,13 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="addTitleMenuModalLabel">
-                    <i class="fas fa-plus-circle me-2"></i><span id="modalTitle">Thêm Menu Chính Mới</span>
+                    <i class="fas fa-plus-circle me-2"></i><span id="modalTitle">Thêm danh mục menu</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="titleMenuForm">
-                    <input type="hidden" id="titleMenuId" name="titleMenuId">
+                    <input type="hidden" id="Id" name="Id">
                     <div class="mb-3">
                         <label for="title" class="form-label required">Tiêu Đề</label>
                         <input type="text" class="form-control" id="title" name="title" required>
@@ -80,20 +82,29 @@
                     </div>
                     <div class="mb-3">
                         <label for="icon" class="form-label">Icon</label>
-                        <input type="text" class="form-control" id="icon" name="icon" placeholder="VD: bi-home">
+                        <input type="text" class="form-control" id="thumnail" name="thumnail" placeholder="bi bi-1-square-fill"></i>
                         <small class="text-muted">Bootstrap Icons: https://icons.getbootstrap.com/</small>
                     </div>
                     <div class="mb-3">
-                        <label for="thumnail" class="form-label">Hình Ảnh</label>
-                        <input type="text" class="form-control" id="thumnail" name="thumnail" placeholder="URL hình ảnh">
+                        <label for="order" class="form-label">Thứ Tự</label>
+                        <input type="number" class="form-control" id="order" name="order" min="1">
                     </div>
+                    <div>
+                        <label for="isActive" class="form-label">Trạng Thái</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="true">Hoạt Động</option>
+                            <option value="false">Khoá</option>
+                        </select>
+                    </div>
+
+             
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>Đóng
                 </button>
-                <button type="button" class="btn btn-primary" id="saveUser">
+                <button type="button" class="btn btn-primary" id="saveTitleMenu">
                     <i class="fas fa-save me-1"></i>Lưu
                 </button>
             </div>
@@ -114,7 +125,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Bạn có chắc chắn muốn xoá người dùng <strong id="deleteUserName"></strong>?</p>
+                <p>Bạn có chắc chắn muốn xoá danh mục menu <strong id="deleteUserName"></strong>?</p>
                 <p class="text-danger mb-0"><small>Hành động này không thể hoàn tác!</small></p>
             </div>
             <div class="modal-footer">
@@ -133,62 +144,48 @@
     <script src="~/js/core/apiClient.js"></script>
     
     <script>
-        // Khởi tạo API clients
-        const userApi = new ApiClient('/api/dang-ky-tai-khoan', {
-            modalSelector: '#modal-add',
-            formSelector: '#userForm'
-        });
+      
+  
 
-        const listUserApi = new ApiClient('/api/lay-danh-sach-nguoi-dung');
+  
 
         var currentPage = 1;
-        var pageSize = 20;
+        var pageSize = 3;
         var editingUserId = null;
 
         $(document).ready(function () {
             let searchKeyword = $('#searchInput').val(); 
             loadUsers(searchKeyword, currentPage, pageSize);
-
-            // Reset form khi mở modal thêm mới
-          // Thay đổi từ 'show.bs.modal' thành 'shown.bs.modal'
-   
-            // Toggle password visibility
-            $('#togglePassword').click(function () {
-                const passwordInput = $('#password');
-                const icon = $(this).find('i');
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
-                } else {
-                    passwordInput.attr('type', 'password');
-                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
-                }
-            });
-
             // Save new user or update existing
-            $(document).on('click', '#saveUser, #updateUser', function() {
+            $(document).on('click', '#saveTitleMenu, #updateTitleMenu', function() {
+
+                const titleMenuApi = new ApiClient('/api/tao-danh-muc-menu', {
+                         modalSelector: '#modal-add',
+                         formSelector: '#titleMenuForm'
+                        });
               
-                const formData = new FormData($('#userForm')[0]);
+                const formData = new FormData($('#titleMenuForm')[0]);
                 
                 if (editingUserId) {
                     // Update existing user
                     updateUser(editingUserId);
                 } else {
                     // Create new user
-                    userApi.post(formData, {
+                    titleMenuApi.post(formData, {
+                     
                         hideModal: true,
                         resetForm: true,
                         callback: function(response) {
                             editingUserId = null;
-                            currentPage = 1;
-                            loadUsers($('#searchInput').val(), currentPage, pageSize);
+                        
+                           loadUsers($('#searchInput').val(), currentPage, pageSize);
                         }
                     });
                 }
             });
             $('#modal-add').on('hidden.bs.modal', function () {
                 resetForm();
-                  $('#updateUser').attr('id', 'saveUser');
+      
             });
 
             // Search functionality
@@ -207,18 +204,14 @@
                 }
             });
 
-            // Status filter
-            $('#statusFilter').change(function() {
-                currentPage = 1;
-                let searchKeyword = $('#searchInput').val();
-                loadUsers(searchKeyword, currentPage, pageSize);
-            });
+         
         });
 
         /**
          * Tải danh sách người dùng
          */
         function loadUsers(searchKeyword, page, pageSize) {
+            var listUserApi = new ApiClient('/api/lay-danh-sach-menu-chinh');
             const formData = new FormData();
             formData.append('search', searchKeyword);
             formData.append('page', page);
@@ -230,7 +223,7 @@
                 showMessage: false,
                 callback: function(response) {
                     if (response.success && response.data) {
-                        renderUserTable(response.data);
+                        renderTitleMenuTable(response.data);
                         renderPagination(response.totalPages, page);
                     }
                 }
@@ -240,31 +233,35 @@
         /**
          * Render bảng người dùng
          */
-        function renderUserTable(users) {
+        function renderTitleMenuTable(titleMenus) {
+            console.log('TitleMenus data:', titleMenus);
             let html = '';
-            users.forEach((user, index) => {
-                const statusBadge = user.isActive 
+            titleMenus.forEach((titleMenu, index) => {
+                let stt = (currentPage - 1) * pageSize + index + 1;
+                const statusBadge = titleMenu.status 
                     ? '<span class="badge bg-success">Hoạt động</span>' 
                     : '<span class="badge bg-danger">Khoá</span>';
                 
                 html += `
                     <tr>
-                        <td>${index + 1}</td>
-                        <td>${user.fullName}</td>
-                        <td>${user.username}</td>
+                        <td>${ stt}</td>
+                        <td>${titleMenu.title}</td>
+                        <td><i class="${titleMenu.thumnail}"></i></td>
+                        <td>${statusBadge}</td>
+                        <td>${titleMenu.order}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-info edit-btn" onclick="editUser('${user.id}')">
+                            <button class="btn btn-sm btn-info edit-btn" onclick="editTitleMenu('${titleMenu.id}')">
                                 <i class="fas fa-edit"></i> Sửa
                             </button>
                   
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}', '${user.fullName}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteTitleMenu('${titleMenu.id}', '${titleMenu.title}')">
                                 <i class="fas fa-trash"></i> Xoá
                             </button>
                         </td>
                     </tr>
                 `;
             });
-            $('#userTableBody').html(html);
+            $('#titleMenuTableBody').html(html);
         }
 
         /**
@@ -307,92 +304,87 @@
         }
 
         /**
-         * Chỉnh sửa người dùng
+         * Chỉnh sửa danh mục menu
          */
-        function editUser(userId) {
-            editingUserId = userId;
+        function editTitleMenu(titleMenuId) {
+            editingUserId = titleMenuId;
            
-            // Tạo API client để lấy thông tin người dùng
-            const getApi = new ApiClient(`/api/chi-tiet-nguoi-dung/${userId}`);
+            // Tạo API client để lấy thông tin danh mục menu
+            const getApi = new ApiClient(`/api/chi-tiet-danh-muc-menu/${titleMenuId}`);
             getApi.get({}, {
                 callback: function(response) {
                     if (response.success && response.data) {
-                        const user = response.data;
-                        console.log('User data:', user);    
-                        $('#userId').val(user.id);
-                        $('#fullName').val(user.fullName);
-                        $('#username').val(user.username);
-                        $('#password').val(user.passwordHash); 
-                        $('#password').removeAttr('required');
-                        $('#passwordNote').show();
-                        $('#addUserModalLabel').text('Chỉnh sửa người dùng');
-                        $('#modalTitle').text('Chỉnh sửa người dùng');
+                        const titleMenu = response.data;
+                        console.log('TitleMenu data:', titleMenu);    
+                        $('#Id').val(titleMenu.id);
+                        $('#title').val(titleMenu.title);
+                        $('#thumnail').val(titleMenu.thumnail);
+                        $('#order').val(titleMenu.order);
+                        $('#status').val(titleMenu.status.toString());
+                        $('#addTitleMenuModalLabel').text('Chỉnh sửa danh mục menu');
+                        $('#modalTitle').text('Chỉnh sửa danh mục menu');
                         $('#modal-add').modal('show');
-                        $('#saveUser').attr('id', 'updateUser');
-                      
-                    
+                        $('#saveTitleMenu').attr('id', 'updateTitleMenu');
                     }
                 }
             });
         }
 
         /**
-         * Xóa người dùng
+         * Xóa danh mục menu
          */
-        function deleteUser(userId, userName) {
+        function deleteTitleMenu(id, userName) {
             $('#deleteUserName').text(userName);
             $('#deleteUserModal').modal('show');
-            $('#confirmDeleteBtn').off('click').click(function() {
-                // Tạo API client để xoá người dùng
-                
-                const deleteApi = new ApiClient(`/api/xoa-nguoi-dung/${userId}`);
+            // Xoá event handler cũ và gắn handler mới BÊN TRONG hàm
+            $('#confirmDeleteBtn').off('click').on('click', function() {
+                // Tạo API client để xoá danh mục menu
+                const deleteApi = new ApiClient(`/api/xoa-menu-chinh/${id}`);
                 deleteApi.delete({}, {
-                    hideModal: true,
-                    successMessage: 'Xoá người dùng thành công',
-                    errorMessage: "Xoá thất bại!",
-
-                    callback: function() {
-                        
+                    hideModal: false,
+                    resetForm: false,
+                    showMessage: true,
+                    callback: function(response) {
+                        console.log('xoá thành công ');
                         $('#deleteUserModal').modal('hide');
                         currentPage = 1;
                         loadUsers($('#searchInput').val(), currentPage, pageSize);
-
                     }
                 });
             });
         }
-
-    
         /**
          * Reset form thêm mới
          */
         function resetForm() {
             editingUserId = null;
-            $('#userId').val('');
-            $('#userForm')[0].reset();
-            $('#password').attr('required', 'required');
-            $('#passwordNote').hide();
-            $('#addUserModalLabel').text('Thêm người dùng mới');
-            $('#modalTitle').text('Thêm người dùng mới');
+            $('#Id').val('');
+            $('#titleMenuForm')[0].reset();
+            $('#addTitleMenuModalLabel').text('Thêm danh mục menu');
+            $('#modalTitle').text('Thêm danh mục menu');
+            $('#updateTitleMenu').attr('id', 'saveTitleMenu');
         }
            /**
-         * cập nhật người dùng
+         * cập nhật danh mục menu
          */
-         function updateUser(userId) {
-            const formData = new FormData($('#userForm')[0]);
-            const updateApi = new ApiClient(`/api/cap-nhat-nguoi-dung/${userId}`);
+        function updateUser(userId) {
+            const formData = new FormData($('#titleMenuForm')[0]);
+            const updateApi = new ApiClient(`/api/cap-nhat-danh-muc-menu/${userId}`, {
+                modalSelector: '#modal-add',
+                formSelector: '#titleMenuForm'
+            });
             updateApi.put(formData, {
-                successMessage: "Cập nhật người dùng thành công!",
+                successMessage: "Cập nhật danh mục menu thành công!",
                 errorMessage: "Cập nhật thất bại!",
                 hideModal: true,
                 resetForm: true,
+                showMessage: true,
                 callback: function(response) {
                     editingUserId = null;
-                    currentPage = 1;
                     loadUsers($('#searchInput').val(), currentPage, pageSize);
                 }
             });
-         }
+        }
 
     </script>
 }

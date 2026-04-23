@@ -8,5 +8,7 @@ namespace websitepkhoaloi.Services.Interface
         Task<status> Add(T entity);
         Task<status> Update(T entity ,int id);
         Task<status> Delete(int id);
+
+        Task<T> GetById(int id);
     }
 }

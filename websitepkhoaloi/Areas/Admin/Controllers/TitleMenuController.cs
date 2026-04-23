@@ -17,7 +17,7 @@ namespace websitepkhoaloi.Areas.Admin.Controllers
         /// <summary>
         /// Hiển thị trang quản lý menu chính
         /// </summary>
-        [Route("/trang-quan-tri/quan-li-menu-chinh")]
+        [Route("/trang-quan-tri/quan-li-danh-muc-menu")]
         public IActionResult IndexTitleMenu()
         {
             return View();
@@ -26,7 +26,7 @@ namespace websitepkhoaloi.Areas.Admin.Controllers
         /// <summary>
         /// Tạo menu chính mới
         /// </summary>
-        [Route("/api/tao-menu-chinh")]
+        [Route("/api/tao-danh-muc-menu")]
         [HttpPost]
         public async Task<IActionResult> CreateTitleMenu(TitlemenuVM createTitleMenu)
         {
@@ -40,7 +40,7 @@ namespace websitepkhoaloi.Areas.Admin.Controllers
                 var result = await _titleMenu.Add(createTitleMenu);
                 if (result.Status == 1)
                 {
-                    return Json(new { success = true, message = "Menu chính đã được tạo thành công." });
+                    return Json(new { success = true, message = "Danh mục menu tạo thành công." });
                 }
                 else
                 {
@@ -49,7 +49,7 @@ namespace websitepkhoaloi.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Lỗi khi tạo menu chính: " + ex.Message });
+                return Json(new { success = false, message = "Lỗi khi tạo danh mục menu: " + ex.Message });
             }
         }
 
@@ -81,7 +81,7 @@ namespace websitepkhoaloi.Areas.Admin.Controllers
         /// <summary>
         /// Cập nhật thông tin menu chính
         /// </summary>
-        [Route("/api/cap-nhat-menu-chinh/{id}")]
+        [Route("/api/cap-nhat-danh-muc-menu/{id}")]
         [HttpPut]
         public async Task<IActionResult> UpdateTitleMenu(int id,  TitlemenuVM updateTitleMenu)
         {
@@ -133,6 +133,25 @@ namespace websitepkhoaloi.Areas.Admin.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Lỗi khi xóa menu chính: " + ex.Message });
+            }
+        }
+        [Route("/api/chi-tiet-danh-muc-menu/{id}")]
+        [HttpGet]
+        public async Task<IActionResult> GetTitleMenuById(int id)
+        {
+            try
+            {
+                var titlemenu = await _titleMenu.GetById(id);
+                if (titlemenu == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy tiêu đề menu" });
+                }
+
+                return Json(new { success = true, data = titlemenu });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi khi lấy chi tiết menu chính: " + ex.Message });
             }
         }
     }
