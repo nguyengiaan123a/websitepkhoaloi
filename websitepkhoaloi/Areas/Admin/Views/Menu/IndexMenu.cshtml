@@ -1,0 +1,469 @@
+@{
+    ViewData["Title"] = "Quản lý menu";
+}
+
+<!-- DataTales Example -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row justify-content-between align-items-center bg-gradient-primary">
+        <h6 class="m-0 font-weight-bold text-white">
+            <i class="fas fa-list me-2"></i>Quản lý menu
+        </h6>
+        <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modal-add">
+            <i class="fas fa-plus-circle me-1"></i>Thêm menu
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Search and Filter Row -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="fas fa-search text-primary"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm menu...">
+                    <button class="btn btn-outline-primary" type="button" id="searchBtn">
+                        <i class="fas fa-search"></i> Tìm
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <div id="menuTree"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="text-muted small" id="paginationInfo"></div>
+            </div>
+            <div class="col-md-6">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-end" id="pagination">
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Menu Modal -->
+<div class="modal fade" id="modal-add" tabindex="-1" aria-labelledby="addMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addMenuModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i><span id="modalTitle">Thêm menu</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="menuForm">
+                    <input type="hidden" id="Id" name="Id">
+                    <div class="mb-3">
+                        <label for="title" class="form-label required">Tên Menu</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                        <div class="invalid-feedback">Vui lòng nhập tên menu</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="titlemenuId" class="form-label required">Danh Mục Menu</label>
+                        <select class="form-select" id="titlemenuId" name="titlemenuId" required>
+                            <option value="">-- Chọn danh mục --</option>
+                        </select>
+                        <div class="invalid-feedback">Vui lòng chọn danh mục</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="url" class="form-label required">URL</label>
+                        <input type="text" class="form-control" id="url" name="url" placeholder="/home" required>
+                        <div class="invalid-feedback">Vui lòng nhập URL</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="thumnail" class="form-label">Icon</label>
+                        <input type="text" class="form-control" id="thumnail" name="thumnail" placeholder="bi bi-house-fill">
+                        <small class="text-muted">Bootstrap Icons: https://icons.getbootstrap.com/</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="order" class="form-label">Thứ Tự</label>
+                        <input type="number" class="form-control" id="order" name="order" min="1" value="1">
+                    </div>
+                    <div>
+                        <label for="status" class="form-label">Trạng Thái</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="true">Hoạt Động</option>
+                            <option value="false">Khoá</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Đóng
+                </button>
+                <button type="button" class="btn btn-primary" id="saveMenu">
+                    <i class="fas fa-save me-1"></i>Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteMenuModal" tabindex="-1" aria-labelledby="deleteMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteMenuModalLabel">
+                    <i class="fas fa-trash-alt me-2"></i>Xác nhận xoá
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xoá menu <strong id="deleteMenuName"></strong>?</p>
+                <p class="text-danger mb-0"><small>Hành động này không thể hoàn tác!</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Huỷ
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash-alt me-1"></i>Xoá
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/core/apiClient.js"></script>
+    <script>
+        var currentPage = 1;
+        var pageSize = 5;
+        var editingMenuId = null;
+
+        $(document).ready(function () {
+            loadTitleMenuDropdown();
+            loadMenuTree(currentPage, pageSize);
+
+            // Save new menu or update existing
+            $(document).on('click', '#saveMenu, #updateMenu', function() {
+                const menuApi = new ApiClient('/api/tao-menu', {
+                    modalSelector: '#modal-add',
+                    formSelector: '#menuForm'
+                });
+
+                const formData = new FormData($('#menuForm')[0]);
+
+                if (editingMenuId) {
+                    updateMenu(editingMenuId);
+                } else {
+                    menuApi.post(formData, {
+                        hideModal: true,
+                        resetForm: true,
+                        callback: function(response) {
+                            editingMenuId = null;
+                            loadMenuTree(currentPage, pageSize);
+                        }
+                    });
+                }
+            });
+
+            $('#modal-add').on('hidden.bs.modal', function () {
+                resetForm();
+            });
+
+            // Search functionality
+            $('#searchBtn').click(function() {
+                currentPage = 1;
+                loadMenuTree(currentPage, pageSize);
+            });
+
+            $('#searchInput').keypress(function(e) {
+                if (e.which === 13) {
+                    $('#searchBtn').click();
+                    return false;
+                }
+            });
+        });
+
+        /**
+         * Load dropdown danh mục menu
+         */
+        function loadTitleMenuDropdown() {
+            const api = new ApiClient('/api/lay-danh-sach-danh-muc');
+            api.get({}, {
+                callback: function(response) {
+                    console.log('Danh mục menu response:', response);
+                    if (response.success && response.data) {
+                        let html = '<option value="">-- Chọn danh mục --</option>';
+                        response.data.forEach(item => {
+                            html += `<option value="${item.id}">${item.title}</option>`;
+                        });
+                        $('#titlemenuId').html(html);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Load menu tree view
+         */
+        function loadMenuTree(page, pageSize) {
+            const api = new ApiClient('/api/lay-menu-theo-danh-muc');
+            const formData = new FormData();
+            formData.append('page', page);
+            formData.append('pagesize', pageSize);
+
+            api.post(formData, {
+                hideModal: false,
+                resetForm: false,
+                showMessage: false,
+                callback: function(response) {
+                    if (response.success && response.data) {
+                        renderMenuTree(response.data);
+                        renderPagination(response.totalPages, page);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Render menu tree
+         */
+        function renderMenuTree(titleMenus) {
+            let html = '<div class="menu-tree">';
+            
+            titleMenus.forEach(titleMenu => {
+                const categoryIcon = `<i class="bi bi-folder-fill text-warning me-2"></i>`;
+                const statusBadge = titleMenu.status 
+                    ? '<span class="badge bg-success">Hoạt động</span>' 
+                    : '<span class="badge bg-danger">Khoá</span>';
+
+                html += `
+                    <div class="category-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">
+                                ${categoryIcon} <strong>${titleMenu.title}</strong>
+                            </h6>
+                            <span>${statusBadge}</span>
+                        </div>
+                        <div class="menu-items ps-4">
+                `;
+
+                if (titleMenu.menus && titleMenu.menus.length > 0) {
+                  
+                    titleMenu.menus.forEach((menu, index) => {
+                        const menuIcon = menu.thumnail ? `<i class="${menu.thumnail} me-2"></i>` : '';
+                        const menuStatus = menu.status 
+                            ? '<span class="badge bg-success">Hoạt động</span>' 
+                            : '<span class="badge bg-danger">Khoá</span>';
+
+                        html += `
+                            <div class="menu-item d-flex justify-content-between align-items-center p-2 mb-2 bg-light rounded">
+                                <div>
+                                    <span class="badge bg-secondary me-2">${menu.order}</span>
+                                    ${menuIcon}
+                                    <strong>${menu.title}</strong>
+                                    <small class="text-muted">(${menu.url})</small>
+                                    <div class="mt-1">${menuStatus}</div>
+                                </div>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-info" onclick="editMenu('${menu.id}')">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteMenu('${menu.id}', '${menu.title}')">
+                                        <i class="fas fa-trash"></i> Xoá
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p class="text-muted"><em>Chưa có menu nào</em></p>';
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            $('#menuTree').html(html);
+        }
+
+        /**
+         * Render pagination
+         */
+        function renderPagination(totalPages, currentPageNum) {
+            let paginationHtml = '';
+            
+            if (currentPageNum > 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${currentPageNum - 1})">Trước</a></li>`;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPageNum) {
+                    paginationHtml += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+                } else {
+                    paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${i})">${i}</a></li>`;
+                }
+            }
+
+            if (currentPageNum < totalPages) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${currentPageNum + 1})">Sau</a></li>`;
+            }
+
+            $('#pagination').html(paginationHtml);
+            $('#paginationInfo').text(`Trang ${currentPageNum} / ${totalPages}`);
+        }
+
+        /**
+         * Chuyển trang
+         */
+        function changePage(pageNum) {
+            currentPage = pageNum;
+            loadMenuTree(currentPage, pageSize);
+            return false;
+        }
+
+        /**
+         * Chỉnh sửa menu
+         */
+        function editMenu(menuId) {
+            editingMenuId = menuId;
+            const getApi = new ApiClient(`/api/chi-tiet-menu/${menuId}`);
+            getApi.get({}, {
+                callback: function(response) {
+                    if (response.success && response.data) {
+                        const menu = response.data;
+                        $('#Id').val(menu.id);
+                        $('#title').val(menu.title);
+                        $('#titlemenuId').val(menu.titlemenuId);
+                        $('#url').val(menu.url);
+                        $('#thumnail').val(menu.thumnail);
+                        $('#order').val(menu.order);
+                        $('#status').val(menu.status.toString());
+                        $('#addMenuModalLabel').text('Chỉnh sửa menu');
+                        $('#modalTitle').text('Chỉnh sửa menu');
+                        $('#modal-add').modal('show');
+                        $('#saveMenu').attr('id', 'updateMenu');
+                    }
+                }
+            });
+        }
+
+        /**
+         * Xóa menu
+         */
+        function deleteMenu(id, title) {
+            $('#deleteMenuName').text(title);
+            $('#deleteMenuModal').modal('show');
+            $('#confirmDeleteBtn').off('click').on('click', function() {
+                const deleteApi = new ApiClient(`/api/xoa-menu/${id}`);
+                deleteApi.delete({}, {
+                    hideModal: false,
+                    resetForm: false,
+                    showMessage: true,
+                    callback: function(response) {
+                        $('#deleteMenuModal').modal('hide');
+                        currentPage = 1;
+                        loadMenuTree(currentPage, pageSize);
+                    }
+                });
+            });
+        }
+
+        /**
+         * Cập nhật menu
+         */
+        function updateMenu(menuId) {
+            const formData = new FormData($('#menuForm')[0]);
+            const updateApi = new ApiClient(`/api/cap-nhat-menu/${menuId}`, {
+                modalSelector: '#modal-add',
+                formSelector: '#menuForm'
+            });
+            updateApi.put(formData, {
+                successMessage: "Cập nhật menu thành công!",
+                errorMessage: "Cập nhật thất bại!",
+                hideModal: true,
+                resetForm: true,
+                showMessage: true,
+                callback: function(response) {
+                    editingMenuId = null;
+                    loadMenuTree(currentPage, pageSize);
+                }
+            });
+        }
+
+        /**
+         * Reset form
+         */
+        function resetForm() {
+            editingMenuId = null;
+            $('#Id').val('');
+            $('#menuForm')[0].reset();
+            $('#addMenuModalLabel').text('Thêm menu');
+            $('#modalTitle').text('Thêm menu');
+            $('#updateMenu').attr('id', 'saveMenu');
+            $('#order').val('1');
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .required:after {
+            content: " *";
+            color: red;
+        }
+
+        .menu-tree {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .category-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .category-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-color: #ffc107;
+        }
+
+        .menu-items {
+            border-left: 3px solid #4e73df;
+            padding-left: 1.5rem !important;
+        }
+
+        .menu-item {
+            border-left: 2px solid #e3e6f0;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background-color: #f0f2f5 !important;
+            border-left-color: #4e73df;
+        }
+
+        .btn-group {
+            gap: 0.25rem;
+        }
+
+        .page-item.active .page-link {
+            background-color: #4e73df;
+            border-color: #4e73df;
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+        }
+
+        .badge {
+            padding: 0.5rem 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+}

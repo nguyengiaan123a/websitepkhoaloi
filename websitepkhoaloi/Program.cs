@@ -25,6 +25,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders();
 builder.Services.AddScoped<IUser,UserResponsive>();
 builder.Services.AddScoped<ITitlemenu,TitleMenuResponsive>();
+builder.Services.AddScoped<IMenu,MenuResponsive>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 var app = builder.Build();

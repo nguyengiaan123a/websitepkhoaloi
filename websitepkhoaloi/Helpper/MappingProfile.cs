@@ -10,7 +10,9 @@ namespace websitepkhoaloi.Helpper
         {
             // map user
             CreateMap<ApplicationUser, CreateUser>().ReverseMap();
-             CreateMap<Titlemenu, TitlemenuVM>().ReverseMap();
+            CreateMap<Titlemenu, TitlemenuVM>().ReverseMap();
+            CreateMap<Menu, MenuVM>().ReverseMap();
+                
         }
     }
 }

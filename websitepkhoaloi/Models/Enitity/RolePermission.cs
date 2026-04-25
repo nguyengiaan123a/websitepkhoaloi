@@ -5,7 +5,7 @@ namespace websitepkhoaloi.Models.Enitity
 {
     public class RolePermission : BaseDomainEntity
     {
-        
+    
 
     }
 }
